@@ -1,1 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BotRunner — Deploy Your Bot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#030305;
+  --s1:rgba(16,16,24,0.92);
+  --s2:rgba(22,22,34,0.8);
+  --b1:rgba(255,255,255,0.07);
+  --b2:rgba(255,255,255,0.12);
+  --t1:#f0f0f5;
+  --t2:#9898a8;
+  --t3:#55555f;
+  --blue:#0a84ff;
+  --blue2:#3a9fff;
+  --green:#30d158;
+  --red:#ff453a;
+  --orange:#ff9f0a;
+  --purple:#bf5af2;
+  --teal:#5ac8fa;
+  --blur:blur(32px) saturate(200%);
+  --r:22px;
+  --rS:14px;
+  --shadow:0 8px 40px rgba(0,0,0,0.6);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--t1);
+  font-family:'Sora',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
 
+/* ─── NOISE GRAIN ─── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.35;
+}
+
+/* ─── ORBS ─── */
+.orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:.12}
+.o1{width:700px;height:700px;background:radial-gradient(circle,#0a84ff,transparent 70%);top:-200px;left:-200px;animation:drift 18s ease-in-out infinite}
+.o2{width:500px;height:500px;background:radial-gradient(circle,#bf5af2,transparent 70%);bottom:-150px;right:-100px;animation:drift 14s ease-in-out infinite reverse}
+.o3{width:400px;height:400px;background:radial-gradient(circle,#30d158,transparent 70%);top:40%;left:60%;animation:drift 20s ease-in-out infinite 5s}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.05)}66%{transform:translate(-20px,50px) scale(.95)}}
+
+/* ─── GRID LINES ─── */
+.grid{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:60px 60px;
+}
+
+/* ─── LAYOUT ─── */
+.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:0 20px 80px}
+
+/* ─── HERO ─── */
+.hero{padding:70px 0 50px;text-align:center}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(10,132,255,.1);
+  border:1px solid rgba(10,132,255,.25);
+  border-radius:50px;padding:7px 16px;
+  font-size:12px;font-weight:600;color:var(--blue2);
+  margin-bottom:28px;letter-spacing:.4px;
+  animation:fadeDown .6s ease both;
+}
+.hero-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--blue);box-shadow:0 0 8px var(--blue);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{
+  font-size:clamp(36px,6vw,58px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;
+  background:linear-gradient(135deg,#ffffff 0%,#a0a0b8 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:16px;animation:fadeDown .6s ease .1s both;
+}
+.hero h1 span{
+  background:linear-gradient(135deg,var(--blue) 0%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{font-size:16px;color:var(--t2);font-weight:400;line-height:1.6;max-width:480px;margin:0 auto;animation:fadeDown .6s ease .2s both}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── STEPS BAR ─── */
+.steps{
+  display:flex;align-items:center;justify-content:center;gap:0;
+  margin:40px 0 32px;animation:fadeDown .6s ease .3s both;
+}
+.step{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;position:relative}
+.step:not(:last-child)::after{
+  content:'';position:absolute;top:16px;left:60%;width:80%;height:1px;
+  background:var(--b2);
+}
+.step.active:not(:last-child)::after{background:linear-gradient(90deg,var(--blue),var(--b2))}
+.step.done:not(:last-child)::after{background:var(--green)}
+.step-num{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;
+  background:var(--s2);border:1px solid var(--b1);color:var(--t3);
+  transition:all .3s ease;flex-shrink:0;z-index:1;
+}
+.step.active .step-num{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 0 20px rgba(10,132,255,.4)}
+.step.done .step-num{background:var(--green);border-color:var(--green);color:#fff}
+.step-label{font-size:10px;color:var(--t3);font-weight:500;letter-spacing:.3px;white-space:nowrap}
+.step.active .step-label{color:var(--t1)}
+.step.done .step-label{color:var(--green)}
+
+/* ─── PANELS ─── */
+.panel{
+  background:var(--s1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:1px solid var(--b1);border-radius:var(--r);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.06);
+  overflow:hidden;
+  animation:fadeUp .5s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.panel+.panel{margin-top:16px}
+.panel.hidden{display:none}
+
+.panel-head{
+  padding:20px 24px;border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;gap:14px;
+}
+.panel-icon{
+  width:38px;height:38px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.pi-blue{background:rgba(10,132,255,.15);color:var(--blue)}
+.pi-green{background:rgba(48,209,88,.15);color:var(--green)}
+.pi-orange{background:rgba(255,159,10,.15);color:var(--orange)}
+.pi-purple{background:rgba(191,90,242,.15);color:var(--purple)}
+.panel-icon svg{width:18px;height:18px}
+.panel-title{font-size:15px;font-weight:600}
+.panel-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.panel-body{padding:24px}
+
+/* ─── UPLOAD ZONE ─── */
+.dropzone{
+  border:2px dashed rgba(10,132,255,.3);border-radius:var(--r);
+  padding:48px 24px;text-align:center;cursor:pointer;
+  background:rgba(10,132,255,.03);
+  transition:all .25s ease;position:relative;
+}
+.dropzone:hover,.dropzone.drag{
+  border-color:var(--blue);background:rgba(10,132,255,.07);
+  box-shadow:0 0 0 4px rgba(10,132,255,.08);
+}
+.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{
+  width:56px;height:56px;border-radius:18px;
+  background:rgba(10,132,255,.12);border:1px solid rgba(10,132,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;
+}
+.dz-icon svg{width:24px;height:24px;color:var(--blue)}
+.dz-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.dz-sub{font-size:13px;color:var(--t2)}
+.file-chosen{
+  display:none;align-items:center;gap:12px;
+  background:rgba(48,209,88,.08);border:1px solid rgba(48,209,88,.2);
+  border-radius:14px;padding:14px 18px;margin-top:16px;
+}
+.file-chosen.show{display:flex}
+.fc-icon{width:36px;height:36px;background:rgba(48,209,88,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fc-icon svg{width:17px;height:17px;color:var(--green)}
+.fc-name{font-size:14px;font-weight:600;color:var(--green)}
+.fc-size{font-size:12px;color:var(--t2);margin-top:2px}
+.fc-remove{margin-left:auto;background:none;border:none;color:var(--t3);cursor:pointer;padding:4px;border-radius:8px;transition:color .15s}
+.fc-remove:hover{color:var(--red)}
+
+/* ─── TEXTAREA ─── */
+.pkg-label{font-size:13px;color:var(--t2);margin-bottom:10px;display:block;font-weight:500}
+.pkg-area{
+  width:100%;min-height:110px;resize:vertical;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--b2);border-radius:14px;
+  color:var(--t1);font-family:'SF Mono','Fira Code',monospace;
+  font-size:13px;line-height:1.7;padding:14px 16px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.pkg-area:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(10,132,255,.12)}
+.pkg-area::placeholder{color:var(--t3)}
+.pkg-hint{font-size:12px;color:var(--t3);margin-top:8px}
+
+/* ─── RUN BTN ─── */
+.run-btn{
+  width:100%;padding:18px;border:none;outline:none;
+  border-radius:16px;cursor:pointer;
+  font-family:'Sora',sans-serif;font-size:16px;font-weight:700;
+  background:linear-gradient(135deg,var(--blue) 0%,#3a6bff 100%);
+  color:#fff;letter-spacing:.2px;
+  box-shadow:0 6px 28px rgba(10,132,255,.35),inset 0 1px 0 rgba(255,255,255,.15);
+  transition:all .2s ease;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.run-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);
+}
+.run-btn:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(10,132,255,.45)}
+.run-btn:active{transform:translateY(0) scale(.98)}
+.run-btn:disabled{opacity:.5;pointer-events:none}
+.run-btn svg{width:20px;height:20px}
+.run-btn.loading{background:linear-gradient(135deg,#1a3a6a,#1a2a5a);box-shadow:none}
+
+/* ─── SPINNER ─── */
+.spin{
+  width:18px;height:18px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite;display:none;
+}
+.loading .spin{display:block}
+.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ─── PROGRESS ─── */
+.progress-wrap{margin-top:20px;display:none}
+.progress-wrap.show{display:block}
+.progress-top{display:flex;justify-content:space-between;margin-bottom:8px;font-size:12px;font-weight:600}
+.progress-label{color:var(--t2)}
+.progress-pct{color:var(--blue)}
+.progress-bar-bg{height:6px;background:rgba(255,255,255,.07);border-radius:50px;overflow:hidden}
+.progress-bar{
+  height:100%;border-radius:50px;
+  background:linear-gradient(90deg,var(--blue),var(--teal));
+  width:0%;transition:width .4s ease;
+  box-shadow:0 0 12px rgba(10,132,255,.5);
+}
+
+/* ─── LOG TERMINAL ─── */
+.terminal{
+  background:rgba(0,0,0,.5);border:1px solid var(--b1);
+  border-radius:var(--r);overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.term-bar{
+  padding:12px 16px;background:rgba(255,255,255,.03);
+  border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;gap:8px;
+}
+.tdot{width:12px;height:12px;border-radius:50%}
+.tdot:nth-child(1){background:#ff5f57}
+.tdot:nth-child(2){background:#febc2e}
+.tdot:nth-child(3){background:#28c840}
+.term-title{font-size:12px;color:var(--t3);margin-left:4px;font-weight:500}
+.term-body{
+  height:260px;overflow-y:auto;padding:16px 18px;
+  font-family:'SF Mono','Fira Code','Courier New',monospace;
+  font-size:12.5px;line-height:1.8;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.08) transparent;
+}
+.term-line{display:flex;gap:12px;animation:lineIn .15s ease both}
+@keyframes lineIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.tl-time{color:#555;flex-shrink:0;user-select:none}
+.tl-msg{white-space:pre-wrap;word-break:break-word}
+.tl-ok{color:var(--green)}.tl-err{color:var(--red)}.tl-info{color:#c8c8d8}.tl-warn{color:var(--orange)}.tl-sys{color:var(--blue)}
+
+/* ─── STATUS CARD ─── */
+.status-card{
+  display:none;background:var(--s2);border:1px solid var(--b1);
+  border-radius:var(--r);padding:24px;margin-top:16px;
+  animation:fadeUp .4s ease both;
+}
+.status-card.show{display:block}
+.sc-top{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+.sc-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+.sc-dot.ok{background:var(--green);box-shadow:0 0 14px rgba(48,209,88,.5);animation:glow 2s ease-in-out infinite}
+.sc-dot.err{background:var(--red);box-shadow:0 0 14px rgba(255,69,58,.5)}
+@keyframes glow{0%,100%{box-shadow:0 0 10px rgba(48,209,88,.4)}50%{box-shadow:0 0 24px rgba(48,209,88,.8)}}
+.sc-title{font-size:17px;font-weight:700}
+.sc-sub{font-size:13px;color:var(--t2);margin-top:2px}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sc-item{background:rgba(255,255,255,.04);border:1px solid var(--b1);border-radius:14px;padding:16px}
+.sci-label{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sci-val{font-size:15px;font-weight:600}
+
+/* ─── TOAST ─── */
+.toast{
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(22,22,34,.97);backdrop-filter:blur(20px);
+  border:1px solid var(--b2);border-radius:50px;
+  padding:12px 22px;font-size:13px;font-weight:600;
+  color:var(--t1);box-shadow:0 8px 40px rgba(0,0,0,.5);
+  opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  pointer-events:none;z-index:999;white-space:nowrap;
+  display:flex;align-items:center;gap:8px;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:4px}
+</style>
+</head>
+<body>
+<div class="orbs"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+<div class="grid"></div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">● Telegram Bot Runner</div>
+    <h1>Deploy Your Bot<br/><span>Instantly</span></h1>
+    <p>Upload your Python file, enter your packages, hit Run — your bot goes live in seconds.</p>
+  </div>
+
+  <!-- STEPS -->
+  <div class="steps">
+    <div class="step active" id="step1"><div class="step-num">1</div><div class="step-label">Upload</div></div>
+    <div class="step" id="step2"><div class="step-num">2</div><div class="step-label">Packages</div></div>
+    <div class="step" id="step3"><div class="step-num">3</div><div class="step-label">Run</div></div>
+    <div class="step" id="step4"><div class="step-num" style="font-size:16px">✓</div><div class="step-label">Live</div></div>
+  </div>
+
+  <!-- STEP 1: UPLOAD -->
+  <div class="panel" id="panelUpload" style="animation-delay:.1s">
+    <div class="panel-head">
+      <div class="panel-icon pi-blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <div><div class="panel-title">Upload Bot File</div><div class="panel-sub">Your Python (.py) bot file</div></div>
+    </div>
+    <div class="panel-body">
+      <div class="dropzone" id="dropzone">
+        <input type="file" accept=".py" id="fileInput" onchange="handleFile(this)"/>
+        <div class="dz-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
+        <div class="dz-title">Drop your bot.py here</div>
+        <div class="dz-sub">or click to browse — .py files only</div>
+      </div>
+      <div class="file-chosen" id="fileChosen">
+        <div class="fc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div><div class="fc-name" id="fcName">—</div><div class="fc-size" id="fcSize">—</div></div>
+        <button class="fc-remove" onclick="removeFile()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: PACKAGES -->
+  <div class="panel" id="panelPkg" style="animation-delay:.2s">
+    <div class="panel-head">
+      <div class="panel-icon pi-orange">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3L12 7 8 3"/></svg>
+      </div>
+      <div><div class="panel-title">Python Packages</div><div class="panel-sub">One package per line</div></div>
+    </div>
+    <div class="panel-body">
+      <label class="pkg-label">Enter required packages (requirements.txt format)</label>
+      <textarea class="pkg-area" id="pkgArea" placeholder="python-telegram-bot==20.7&#10;requests&#10;aiohttp&#10;httpx"></textarea>
+      <div class="pkg-hint">💡 You can specify versions like <code style="color:var(--blue)">package==1.0.0</code> or just the name</div>
+    </div>
+  </div>
+
+  <!-- STEP 3: RUN -->
+  <div class="panel" id="panelRun" style="animation-delay:.3s">
+    <div class="panel-head">
+      <div class="panel-icon pi-green">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <div><div class="panel-title">Deploy & Run</div><div class="panel-sub">Install packages and start your bot</div></div>
+    </div>
+    <div class="panel-body">
+      <button class="run-btn" id="runBtn" onclick="runBot()">
+        <div class="spin"></div>
+        <span class="btn-text" style="display:flex;align-items:center;gap:10px">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Run Bot
+        </span>
+      </button>
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-top"><span class="progress-label" id="progressLabel">Installing packages...</span><span class="progress-pct" id="progressPct">0%</span></div>
+        <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TERMINAL -->
+  <div class="panel" id="panelTerm" style="animation-delay:.4s">
+    <div class="panel-head">
+      <div class="panel-icon pi-purple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+      </div>
+      <div><div class="panel-title">Live Console</div><div class="panel-sub">Real-time deployment output</div></div>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <div class="terminal">
+        <div class="term-bar">
+          <div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>
+          <span class="term-title">bot-runner — bash</span>
+        </div>
+        <div class="term-body" id="termBody">
+          <div class="term-line"><span class="tl-time">00:00:00</span><span class="tl-msg tl-sys">$ BotRunner ready. Upload your file and click Run.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-card" id="statusCard">
+    <div class="sc-top">
+      <div class="sc-dot" id="scDot"></div>
+      <div><div class="sc-title" id="scTitle">—</div><div class="sc-sub" id="scSub">—</div></div>
+    </div>
+    <div class="sc-grid">
+      <div class="sc-item"><div class="sci-label">File</div><div class="sci-val" id="sciFile">—</div></div>
+      <div class="sc-item"><div class="sci-label">Status</div><div class="sci-val" id="sciStatus">—</div></div>
+      <div class="sc-item"><div class="sci-label">Packages</div><div class="sci-val" id="sciPkg">—</div></div>
+      <div class="sc-item"><div class="sci-label">Started</div><div class="sci-val" id="sciTime">—</div></div>
+    </div>
+  </div>
+
+</div><!-- wrap -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedFile = null;
+
+// ── Drag & Drop ──
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.name.endsWith('.py')) setFile(f);
+  else toast('⚠️ Only .py files are allowed');
+});
+
+function handleFile(input) {
+  if (input.files[0]) setFile(input.files[0]);
+}
+
+function setFile(f) {
+  selectedFile = f;
+  document.getElementById('fcName').textContent = f.name;
+  document.getElementById('fcSize').textContent = (f.size / 1024).toFixed(1) + ' KB';
+  document.getElementById('fileChosen').classList.add('show');
+  setStep(2);
+  log('File selected: ' + f.name, 'ok');
+  toast('✅ ' + f.name + ' selected');
+}
+
+function removeFile() {
+  selectedFile = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('fileChosen').classList.remove('show');
+  setStep(1);
+  log('File removed', 'warn');
+}
+
+// ── Steps ──
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById('step' + i);
+    s.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+}
+
+// ── Log ──
+function log(msg, type = 'info') {
+  const body = document.getElementById('termBody');
+  const now = new Date();
+  const t = now.toTimeString().slice(0, 8);
+  const line = document.createElement('div');
+  line.className = 'term-line';
+  line.innerHTML = `<span class="tl-time">${t}</span><span class="tl-msg tl-${type}">${escHtml(msg)}</span>`;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Progress ──
+function setProgress(pct, label) {
+  document.getElementById('progressWrap').classList.add('show');
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+// ── Toast ──
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── RUN ──
+async function runBot() {
+  if (!selectedFile) { toast('⚠️ Please upload a .py file first'); return; }
+
+  const pkgs = document.getElementById('pkgArea').value.trim();
+  const btn = document.getElementById('runBtn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  setStep(3);
+  log('─────────────────────────', 'sys');
+  log('Starting deployment...', 'sys');
+
+  const form = new FormData();
+  form.append('file', selectedFile);
+  form.append('packages', pkgs);
+
+  // Simulated progress phases
+  setProgress(5, 'Uploading file...');
+  log('Uploading ' + selectedFile.name + '...', 'info');
+
+  try {
+    // Phase 1: Upload & install
+    const uploadResp = await fetch('/api/run', { method: 'POST', body: form });
+
+    if (!uploadResp.ok) {
+      const err = await uploadResp.text();
+      throw new Error(err || 'Server error ' + uploadResp.status);
+    }
+
+    setProgress(30, 'File uploaded. Installing packages...');
+    log('File uploaded successfully', 'ok');
+
+    if (pkgs) {
+      const lines = pkgs.split('\n').filter(l => l.trim());
+      log('Installing ' + lines.length + ' package(s)...', 'info');
+      lines.forEach(p => log('  pip install ' + p.trim(), 'sys'));
+    }
+
+    setProgress(65, 'Packages installed. Starting bot...');
+
+    // Poll for result
+    const result = await uploadResp.json();
+
+    setProgress(100, 'Done!');
+
+    if (result.success) {
+      setStep(4);
+      log('─────────────────────────', 'sys');
+      log('✅ Bot started successfully!', 'ok');
+      if (result.output) result.output.split('\n').forEach(l => l && log(l, 'info'));
+
+      // Status card
+      const sc = document.getElementById('statusCard');
+      sc.classList.add('show');
+      document.getElementById('scDot').className = 'sc-dot ok';
+      document.getElementById('scTitle').textContent = '🟢 Bot is Running';
+      document.getElementById('scSub').textContent = 'Your Telegram bot is now live';
+      document.getElementById('sciFile').textContent = selectedFile.name;
+      document.getElementById('sciStatus').innerHTML = '<span style="color:var(--green)">Running</span>';
+      document.getElementById('sciPkg').textContent = pkgs ? pkgs.split('\n').filter(l=>l.trim()).length + ' packages' : 'None';
+      document.getElementById('sciTime').textContent = new Date().toLocaleTimeString();
+      toast('🚀 Bot is live!');
+    } else {
+      throw new Error(result.error || 'Unknown error');
+    }
+
+  } catch (e) {
+    log('❌ Error: ' + e.message, 'err');
+    toast('❌ Failed: ' + e.message);
+    document.getElementById('scDot').className = 'sc-dot err';
+    document.getElementById('scTitle').textContent = '🔴 Deployment Failed';
+    document.getElementById('scSub').textContent = e.message;
+    document.getElementById('statusCard').classList.add('show');
+    setStep(1);
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
